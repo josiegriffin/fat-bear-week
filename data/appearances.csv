@@ -14,6 +14,7 @@ year,bear_id,entry_type,n_cubs_in_entry,result,roster_complete_for_year,source_k
 2019,775,individual,,runner_up,False,explore_hoc,
 2020,32,individual,,runner_up,False,explore_hoc,
 2020,747,individual,,champion,False,explore_hoc,
+2020,151,individual,,semifinal,False,nps_2020_blog,747 beat 151 in the semifinal en route to the title (NPS recap blog)
 2021,128,individual,,eliminated_round_unknown,True,nps_2021,
 2021,131,individual,,eliminated_round_unknown,True,nps_2021,
 2021,132-cub-2021,cub,,eliminated_round_unknown,True,nps_2021,
