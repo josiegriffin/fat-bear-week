@@ -1,10 +1,6 @@
 library(tidyverse)
 
-# Katmai Conservancy IRS Form 990 total revenue by tax/calendar year, from
-# ProPublica Nonprofit Explorer (EIN 81-2861724) and, for 2021 and 2024
-# (not yet indexed by ProPublica), the Conservancy's own posted 990 PDFs.
-# Org-wide revenue, not a Fat Bear Week-specific figure (see chat log).
-# Conservancy formed August 2016, so no data before 2017; 2025 not yet filed.
+# Katmai Conservancy revenue by year (IRS Form 990s)
 revenue <- tribble(
   ~year, ~total_revenue,
   2017,  203307,

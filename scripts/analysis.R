@@ -5,6 +5,7 @@ library(ggstar)
 library(patchwork)
 library(ggtext)
 
+# --- Update summary.csv with labeled entries/champion/runner_up ---------
 appearances <- read_csv("data/appearances.csv", show_col_types = FALSE)
 summary_df <- read_csv("data/summary.csv", show_col_types = FALSE)
 bears <- read_csv("data/bears.csv", show_col_types = FALSE)
@@ -13,8 +14,7 @@ bear_names <- bears |>
   mutate(bear_id = as.character(bear_id)) |>
   select(bear_id, name)
 
-# Build "<bear_id> <name>" labels, falling back to just the bear_id when
-# no name is on record (e.g. "480 Otis" vs. "410")
+# "<bear_id> <name>" labels, falling back to just the bear_id
 label_bears <- function(bear_id) {
   tibble(bear_id = as.character(bear_id)) |>
     left_join(bear_names, by = "bear_id") |>
@@ -22,8 +22,7 @@ label_bears <- function(bear_id) {
     pull(label)
 }
 
-# Note: 2014-2020 entries reflect finalists only, since the full roster
-# wasn't tracked for those years (roster_complete_for_year == FALSE)
+# Per-year entry list (2014-2020 = finalists only)
 entries_per_year <- appearances |>
   mutate(bear_label = label_bears(bear_id)) |>
   arrange(bear_label) |>
@@ -42,11 +41,7 @@ summary_out <- summary_df |>
 write_csv(summary_out, "data/summary.csv")
 
 # --- Per-bear contest chart ---------------------------------------------
-# Shows each qualifying bear's yearly result across seasons (2026, still
-# in progress, is excluded). "Qualifying" means the bear has at least 4
-# appearances among 2014-2025, plus 409 added by request regardless of her
-# count (2: champion in 2015 and 2018) - TODO: this pushes the chart to 8
-# bears; bump the lowest one back out once we decide who.
+# TODO: bump a bear now that 409 is force-included (8 shown)
 min_appearances <- 4
 force_include <- c("409")
 
@@ -59,9 +54,8 @@ qualifying <- completed_appearances |>
 
 contest_data <- completed_appearances |>
   inner_join(qualifying, by = "bear_id") |>
-  left_join(bear_names, by = "bear_id") |>
   mutate(
-    label = if_else(is.na(name), bear_id, str_c(bear_id, name, sep = " ")),
+    label = label_bears(bear_id),
     status = case_when(
       result == "champion" ~ "Champion",
       result == "runner_up" ~ "Runner-up",
@@ -76,8 +70,7 @@ contest_span <- contest_data |>
 
 contest_years <- min(contest_data$year):max(contest_data$year)
 
-# Show the first and last year in full (e.g. "2014"); abbreviate years in
-# between to two digits with a leading apostrophe (e.g. "'15")
+# Abbreviate middle years (e.g. "'15"); keep first/last year in full
 abbreviate_years <- function(year) {
   if_else(
     year %in% range(contest_years),
@@ -86,15 +79,15 @@ abbreviate_years <- function(year) {
   )
 }
 
+year_scale <- scale_x_continuous(
+  breaks = contest_years, labels = abbreviate_years, limits = range(contest_years)
+)
+
 title_text <- "It's Fat Bear Week!"
 subtitle_text <- "Below are the historical top competitors for fattest bear in Katmai National Park Alaska, which has occurred annually since 2014. All bears have a numerical ID and some bears also have a name."
 title_style <- element_text(face = "bold", size = 28, hjust = 0.5)
 
-# Both the subtitle and caption are boxed with this same style. Applying it
-# via plot_annotation() (rather than each chart's own labs()/theme()) means
-# both boxes are sized against the same reference frame - the full
-# plot/figure width - so they always render at the same width as each
-# other, instead of one being scoped to a single panel's narrower width.
+# Shared boxed-text style for subtitle/caption
 boxed_text <- function(outer_margin) {
   element_textbox_simple(
     size = 11, face = "bold", color = "black", hjust = 0.5, halign = 0.5,
@@ -109,8 +102,7 @@ contest_chart <- ggplot(contest_data, aes(y = label)) +
     aes(x = min_year, xend = max_year, yend = label),
     color = "grey60"
   ) +
-  # starshape 15 is a plain circle and 1 is a five-pointed star (see
-  # ggstar::show_starshapes()); fill distinguishes entered vs. runner-up
+  # starshape: 15 = circle, 1 = star
   geom_star(
     aes(x = year, starshape = status, fill = status, size = status),
     color = "black"
@@ -121,7 +113,7 @@ contest_chart <- ggplot(contest_data, aes(y = label)) +
     values = c("Entered" = 2.5, "Runner-up" = 2.5, "Champion" = 3.5),
     guide = "none"
   ) +
-  scale_x_continuous(breaks = contest_years, labels = abbreviate_years, limits = range(contest_years)) +
+  year_scale +
   labs(x = NULL, y = NULL, size = NULL) +
   theme_minimal(base_size = 16) +
   theme(
@@ -137,10 +129,7 @@ contest_chart <- ggplot(contest_data, aes(y = label)) +
     panel.grid.major.y = element_blank()
   )
 
-# Title and subtitle applied via plot_annotation() (see boxed_text() above)
-# rather than contest_chart's own labs()/theme(), so the subtitle box width
-# matches the caption's when this chart is reused (as contest_chart_top) in
-# the combined contest_and_overlay figure below
+# Standalone chart with title/subtitle
 contest_chart_standalone <- contest_chart +
   plot_annotation(
     title = title_text,
@@ -149,18 +138,12 @@ contest_chart_standalone <- contest_chart +
   )
 contest_chart_standalone
 
-# --- Katmai Conservancy revenue & total votes, matched to the same year
-# range as the contest chart -----------------------------------------
-# Revenue is missing for 2014-2016 and 2025; votes are missing for
-# 2015-2016. Votes are scaled onto the same numeric range as revenue so
-# both series can share a single y-axis (with a secondary axis showing
-# the true vote counts).
+# --- Revenue & votes overlay chart ---------------------------------------
 overlay_data <- summary_out |>
   filter(year %in% contest_years) |>
   select(year, total_revenue, total_votes)
 
-# Years missing either value (2014-2016 revenue, 2015-2016 votes) are
-# dropped pairwise rather than imputed
+# Revenue/votes correlation
 revenue_votes_cor <- cor(
   overlay_data$total_revenue, overlay_data$total_votes,
   use = "pairwise.complete.obs"
@@ -176,15 +159,10 @@ caption_text <- str_glue(
 scale_factor <- max(overlay_data$total_revenue, na.rm = TRUE) /
   max(overlay_data$total_votes, na.rm = TRUE)
 
-# The 2018-2025 votes points are drawn with a solid line, but 2014's vote
-# total is otherwise isolated (2015-2016 are missing); connect it to the
-# rest of the series with a dotted line to signal that the gap is bridged
-# for visual continuity only, not an actual observed trend
+# Bridge the 2015-2016 votes gap with a dotted line
 votes_gap <- overlay_data |>
   filter(year %in% c(2014, 2018))
 
-# Grayscale only: distinguish the two series by both shade and linetype
-# so they're still distinguishable from each other
 overlay_chart <- ggplot(overlay_data, aes(x = year)) +
   geom_line(aes(y = total_revenue, color = "Revenue", linetype = "Revenue")) +
   geom_point(aes(y = total_revenue, color = "Revenue"), size = 2) +
@@ -192,12 +170,10 @@ overlay_chart <- ggplot(overlay_data, aes(x = year)) +
   geom_line(
     data = votes_gap,
     aes(y = total_votes * scale_factor),
-    # Custom dash pattern ("11") packs the dots closer together than the
-    # built-in "dotted" linetype
     linetype = "11", color = "black", inherit.aes = TRUE
   ) +
   geom_point(aes(y = total_votes * scale_factor, color = "Total votes"), size = 2) +
-  scale_x_continuous(breaks = contest_years, labels = abbreviate_years, limits = range(contest_years)) +
+  year_scale +
   scale_y_continuous(
     name = "Total revenue",
     labels = scales::label_dollar(scale = 1e-6, suffix = "M"),
@@ -210,23 +186,16 @@ overlay_chart <- ggplot(overlay_data, aes(x = year)) +
   theme(
     axis.text.x = element_text(color = "black", size = 10),
     axis.text.y = element_text(color = "black", size = 12),
-    # The left title's true gap is larger than its 8pt margin because
-    # patchwork pads the shared left axis-text column to match the width
-    # of the contest chart's (much wider) bear-name axis text above it.
-    # The right side gets no such padding, so its margin is increased to
-    # compensate and make the two gaps look equal.
+    # Balance left/right axis title margins
     axis.title.y = element_text(size = 13, margin = margin(r = 4)),
     axis.title.y.right = element_text(size = 13, margin = margin(l = 24)),
-    # Bottom placement keeps the legend away from the shared year-axis
-    # row, which sits above this panel in the stacked figure
     legend.position = "bottom",
     panel.grid.minor = element_blank()
   )
 overlay_chart
 
-# For the stacked figure, drop the top chart's x-axis text/ticks (the
-# bottom chart's shows the shared years) but keep its vertical gridlines
-# so each bear's points still visually line up with the year below
+# --- Combined stacked figure -----------------------------------------
+# Drop top chart's x-axis (shown below instead)
 contest_chart_top <- contest_chart +
   theme(
     axis.text.x = element_blank(),
@@ -234,9 +203,7 @@ contest_chart_top <- contest_chart +
     plot.margin = margin(b = 2)
   )
 
-# Move the shared year axis to the top of the overlay panel, so it sits
-# between the two charts rather than repeating below the contest chart
-# and again below the overlay chart
+# Shared year axis between the two panels
 overlay_chart_bottom <- overlay_chart +
   scale_x_continuous(
     breaks = contest_years, labels = abbreviate_years, limits = range(contest_years),
@@ -253,7 +220,6 @@ contest_and_overlay <- contest_chart_top / overlay_chart_bottom +
   plot_annotation(
     title = title_text,
     subtitle = subtitle_text,
-    # TODO: replace with real caption text (e.g. data source, units, notes)
     caption = caption_text,
     theme = theme(
       plot.title = title_style,
