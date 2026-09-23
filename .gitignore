@@ -24,6 +24,9 @@
 # Posit IDE/assistant local config
 .posit/
 
+# Default Rscript graphics device artifact
+Rplots.pdf
+
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf

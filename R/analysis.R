@@ -2,6 +2,7 @@
 
 library(tidyverse)
 library(ggstar)
+library(patchwork)
 
 appearances <- read_csv("data/appearances.csv", show_col_types = FALSE)
 summary_df <- read_csv("data/summary.csv", show_col_types = FALSE)
@@ -39,7 +40,7 @@ summary_out <- summary_df |>
 
 write_csv(summary_out, "data/summary.csv")
 
-# --- Per-bear career chart ---------------------------------------------
+# --- Per-bear contest chart ---------------------------------------------
 # Shows each qualifying bear's yearly result across seasons (2026, still
 # in progress, is excluded). "Qualifying" means the bear has at least 4
 # appearances among 2014-2025.
@@ -53,7 +54,7 @@ qualifying <- completed_appearances |>
   count(bear_id, name = "n_appearances") |>
   filter(n_appearances >= min_appearances)
 
-career_data <- completed_appearances |>
+contest_data <- completed_appearances |>
   inner_join(qualifying, by = "bear_id") |>
   left_join(bear_names, by = "bear_id") |>
   mutate(
@@ -67,12 +68,24 @@ career_data <- completed_appearances |>
   mutate(first_year = min(year), .by = bear_id) |>
   mutate(label = fct_reorder(label, -first_year, .fun = min))
 
-career_span <- career_data |>
+contest_span <- contest_data |>
   summarize(min_year = min(year), max_year = max(year), .by = c(bear_id, label))
 
-career_chart <- ggplot(career_data, aes(y = label)) +
+contest_years <- min(contest_data$year):max(contest_data$year)
+
+# Show the first and last year in full (e.g. "2014"); abbreviate years in
+# between to two digits with a leading apostrophe (e.g. "'15")
+abbreviate_years <- function(year) {
+  if_else(
+    year %in% range(contest_years),
+    as.character(year),
+    str_c("'", str_sub(year, 3, 4))
+  )
+}
+
+contest_chart <- ggplot(contest_data, aes(y = label)) +
   geom_segment(
-    data = career_span,
+    data = contest_span,
     aes(x = min_year, xend = max_year, yend = label),
     color = "grey60"
   ) +
@@ -88,17 +101,17 @@ career_chart <- ggplot(career_data, aes(y = label)) +
     values = c("Entered" = 2.5, "Runner-up" = 2.5, "Champion" = 3.5),
     guide = "none"
   ) +
-  scale_x_continuous(breaks = min(career_data$year):max(career_data$year)) +
+  scale_x_continuous(breaks = contest_years, labels = abbreviate_years, limits = range(contest_years)) +
   labs(
     title = "Fat Bear Week",
-    subtitle = str_glue("These bears have made the most appearances in the bracket."),
+    subtitle = str_wrap("These bears have made the most appearances in the Fat Bear bracket since it started in 2014. All bears have a numerical ID and some bears also have a name.", width = 75),
     x = NULL, y = NULL, size = NULL
   ) +
   theme_minimal(base_size = 16) +
   theme(
     plot.title = element_text(face = "bold", size = 28, hjust = 0.5),
     plot.subtitle = element_text(size = 13, color = "black", margin = margin(b = 2), hjust = 0.5),
-    axis.text.x = element_text(color = "black", size = 10),
+    axis.text.x = element_text(color = "black", size = 10, face = "bold"),
     axis.text.y = element_text(color = "black", size = 12, margin = margin(r = 0)),
     legend.text = element_text(size = 12, margin = margin(l = 1)),
     legend.position = "top",
@@ -109,7 +122,103 @@ career_chart <- ggplot(career_data, aes(y = label)) +
     panel.grid.minor = element_blank(),
     panel.grid.major.y = element_blank()
   )
-career_chart
+contest_chart
 
-ggsave("career_chart.png", career_chart, width = 8, height = 6, dpi = 150)
-ggsave("career_chart.svg", career_chart, width = 8, height = 6)
+# --- Katmai Conservancy revenue & total votes, matched to the same year
+# range as the contest chart -----------------------------------------
+# Revenue is missing for 2014-2016 and 2025; votes are missing for
+# 2015-2016. Votes are scaled onto the same numeric range as revenue so
+# both series can share a single y-axis (with a secondary axis showing
+# the true vote counts).
+overlay_data <- summary_out |>
+  filter(year %in% contest_years) |>
+  select(year, total_revenue, total_votes)
+
+scale_factor <- max(overlay_data$total_revenue, na.rm = TRUE) /
+  max(overlay_data$total_votes, na.rm = TRUE)
+
+# The 2018-2025 votes points are drawn with a solid line, but 2014's vote
+# total is otherwise isolated (2015-2016 are missing); connect it to the
+# rest of the series with a dotted line to signal that the gap is bridged
+# for visual continuity only, not an actual observed trend
+votes_gap <- overlay_data |>
+  filter(year %in% c(2014, 2018))
+
+# Grayscale only: distinguish the two series by both shade and linetype
+# so they're still distinguishable from each other
+overlay_chart <- ggplot(overlay_data, aes(x = year)) +
+  geom_line(aes(y = total_revenue, color = "Revenue", linetype = "Revenue")) +
+  geom_point(aes(y = total_revenue, color = "Revenue"), size = 2) +
+  geom_line(aes(y = total_votes * scale_factor, color = "Total votes", linetype = "Total votes")) +
+  geom_line(
+    data = votes_gap,
+    aes(y = total_votes * scale_factor),
+    # Custom dash pattern ("11") packs the dots closer together than the
+    # built-in "dotted" linetype
+    linetype = "11", color = "black", inherit.aes = TRUE
+  ) +
+  geom_point(aes(y = total_votes * scale_factor, color = "Total votes"), size = 2) +
+  scale_x_continuous(breaks = contest_years, labels = abbreviate_years, limits = range(contest_years)) +
+  scale_y_continuous(
+    name = "Total revenue",
+    labels = scales::label_dollar(scale = 1e-6, suffix = "M"),
+    sec.axis = sec_axis(~ . / scale_factor, name = "Total votes", labels = scales::label_comma())
+  ) +
+  scale_color_manual(name = NULL, values = c("Revenue" = "grey40", "Total votes" = "black")) +
+  scale_linetype_manual(name = NULL, values = c("Revenue" = "dashed", "Total votes" = "solid")) +
+  labs(x = NULL) +
+  theme_minimal(base_size = 16) +
+  theme(
+    axis.text.x = element_text(color = "black", size = 10),
+    axis.text.y = element_text(color = "black", size = 12),
+    # The left title's true gap is larger than its 8pt margin because
+    # patchwork pads the shared left axis-text column to match the width
+    # of the contest chart's (much wider) bear-name axis text above it.
+    # The right side gets no such padding, so its margin is increased to
+    # compensate and make the two gaps look equal.
+    axis.title.y = element_text(size = 13, margin = margin(r = 4)),
+    axis.title.y.right = element_text(size = 13, margin = margin(l = 24)),
+    # Bottom placement keeps the legend away from the shared year-axis
+    # row, which sits above this panel in the stacked figure
+    legend.position = "bottom",
+    panel.grid.minor = element_blank()
+  )
+overlay_chart
+
+# For the stacked figure, drop the top chart's x-axis text/ticks (the
+# bottom chart's shows the shared years) but keep its vertical gridlines
+# so each bear's points still visually line up with the year below
+contest_chart_top <- contest_chart +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    plot.margin = margin(b = 2)
+  )
+
+# Move the shared year axis to the top of the overlay panel, so it sits
+# between the two charts rather than repeating below the contest chart
+# and again below the overlay chart
+overlay_chart_bottom <- overlay_chart +
+  scale_x_continuous(
+    breaks = contest_years, labels = abbreviate_years, limits = range(contest_years),
+    position = "top"
+  ) +
+  theme(
+    axis.text.x.top = element_text(color = "black", size = 12, face = "bold"),
+    axis.ticks.x.top = element_blank(),
+    plot.margin = margin(t = 2)
+  )
+
+contest_and_overlay <- contest_chart_top / overlay_chart_bottom +
+  plot_layout(heights = c(3, 1.5), axis_titles = "collect") +
+  plot_annotation(
+    # TODO: replace with real caption text (e.g. data source, units, notes)
+    caption = str_wrap("The total revenue for the Katmai Conservancy that supports the bears is highly correlated to the number of votes cast in the Fat Bear Week contest. (Data sourced from public 990 tax filings)", width = 75),
+    theme = theme(plot.caption = element_text(size = 13, color = "black", margin = margin(t = 2), hjust = 0.5))
+  )
+contest_and_overlay
+
+ggsave("contest_chart.png", contest_chart, width = 8, height = 6, dpi = 150)
+ggsave("contest_chart.svg", contest_chart, width = 8, height = 6)
+ggsave("contest_and_revenue.png", contest_and_overlay, width = 8, height = 9, dpi = 150)
+ggsave("contest_and_revenue.svg", contest_and_overlay, width = 8, height = 9)
