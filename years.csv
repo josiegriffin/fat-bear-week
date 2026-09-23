@@ -1,0 +1,14 @@
+year,start_date,end_date,n_competitors,roster_complete,total_votes,total_votes_approx,champion_id,runner_up_id,champion_final_votes,runner_up_final_votes,final_votes_approx,format_notes,sources,notes
+2014,2014-09-30,2014-09-30,,False,,,480,410,,,,One-day 'Fat Bear Tuesday'; votes were Facebook likes,nps_past;explore_hoc,
+2015,2015-10-07,2015-10-13,,False,,,409,480,,,,First full week,nps_past;explore_hoc,
+2016,,,,False,,,480,435,,,,,explore_hoc,
+2017,,,,False,,,480,747,,,,,explore_hoc,Final described as close
+2018,,,,False,,,409,747,,,,,explore_hoc,409 beat 480 in round 2
+2019,,,,False,,,435,775,17500,3600,True,,explore_hoc;fox_2019,"Final ran 12 hours; RU total reported as 'about 3,600'"
+2020,2020-09-30,2020-10-06,,False,640000,True,747,32,,,,First year voting moved from Facebook to explore.org,explore_hoc;nps_2020_rel,"Total reported as 'more than 640,000'; bracket exists only as image"
+2021,2021-09-29,2021-10-05,12,True,793463,False,480,151,51230,44834,False,First Fat Bear Junior; junior winner entered main bracket,nps_2021;nps_2021_blog,
+2022,2022-10-05,2022-10-11,12,True,1000000,True,747,901,,,,Fat Bear Junior winner entered main bracket,nps_2022;nps_2022_rel;explore_hoc;wiki,Total 'more than one million'; semifinal ballot-stuffing (fraudulent 435 votes discarded)
+2023,2023-10-04,2023-10-10,12,True,1300000,True,128,32,,,,Fat Bear Junior winner entered main bracket,news_12_2023;nps_2023_rel;explore_hoc;nps_2024_rel,Total CONFLICT: ~1.3M (Explore) vs 'nearly 1.4M' (NPS 2024 release). Final ~2:1 margin
+2024,2024-10-02,2024-10-08,12,True,1200000,True,128,32,70000,30000,True,Start delayed after bear 402 killed on camera,nps_2024;explore_hoc;wiki;npr_2024,"Final reported as 'more than 70,000' vs 'approximately 30,000'"
+2025,2025-09-23,2025-09-30,12,True,1700000,True,32,856,96350,63725,False,,usat_2025;nbc_2025;explore_hoc;smith_2025;wiki,Total CONFLICT: >1.7M (Explore/NPS) vs >1.6M (Smithsonian) vs >1.5M (Wikipedia)
+2026,2026-09-22,2026-09-29,16,True,,,,,,,,"16 bears; Fat Bear Junior retired, cubs compete with mothers as family units; no weekend voting",nps_2026_rel;usat_2026;unoff_2026,In progress
