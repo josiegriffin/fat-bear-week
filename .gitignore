@@ -21,6 +21,9 @@
 # RStudio files
 .Rproj.user/
 
+# Posit IDE/assistant local config
+.posit/
+
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
