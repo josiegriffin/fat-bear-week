@@ -263,7 +263,7 @@ contest_and_overlay <- contest_chart_top / overlay_chart_bottom +
   )
 contest_and_overlay
 
-ggsave("contest_chart.png", contest_chart_standalone, width = 8, height = 6, dpi = 150)
-ggsave("contest_chart.svg", contest_chart_standalone, width = 8, height = 6)
-ggsave("contest_and_revenue.png", contest_and_overlay, width = 8, height = 9, dpi = 150)
-ggsave("contest_and_revenue.svg", contest_and_overlay, width = 8, height = 9)
+ggsave("images/contest_chart.png", contest_chart_standalone, width = 8, height = 6, dpi = 150)
+ggsave("images/contest_chart.svg", contest_chart_standalone, width = 8, height = 6)
+ggsave("images/contest_and_revenue.png", contest_and_overlay, width = 8, height = 9, dpi = 150)
+ggsave("images/contest_and_revenue.svg", contest_and_overlay, width = 8, height = 9)
