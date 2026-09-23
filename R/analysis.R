@@ -86,6 +86,24 @@ abbreviate_years <- function(year) {
   )
 }
 
+title_text <- "Fat Bear Week"
+subtitle_text <- "These bears have made the most appearances in the Fat Bear bracket since it started in 2014. All bears have a numerical ID and some bears also have a name."
+caption_text <- "The total revenue for the Katmai Conservancy that supports the bears is highly correlated to the number of votes cast in the Fat Bear Week contest. (Data sourced from public 990 tax filings)"
+title_style <- element_text(face = "bold", size = 28, hjust = 0.5)
+
+# Both the subtitle and caption are boxed with this same style. Applying it
+# via plot_annotation() (rather than each chart's own labs()/theme()) means
+# both boxes are sized against the same reference frame - the full
+# plot/figure width - so they always render at the same width as each
+# other, instead of one being scoped to a single panel's narrower width.
+boxed_text <- function(outer_margin) {
+  element_textbox_simple(
+    size = 11, face = "bold", color = "black", hjust = 0.5, halign = 0.5,
+    margin = outer_margin, padding = margin(5, 8, 5, 8),
+    linetype = 1, box.color = "grey60", linewidth = 0.4, fill = NA
+  )
+}
+
 contest_chart <- ggplot(contest_data, aes(y = label)) +
   geom_segment(
     data = contest_span,
@@ -105,19 +123,9 @@ contest_chart <- ggplot(contest_data, aes(y = label)) +
     guide = "none"
   ) +
   scale_x_continuous(breaks = contest_years, labels = abbreviate_years, limits = range(contest_years)) +
-  labs(
-    title = "Fat Bear Week",
-    subtitle = "These bears have made the most appearances in the Fat Bear bracket since it started in 2014. All bears have a numerical ID and some bears also have a name.",
-    x = NULL, y = NULL, size = NULL
-  ) +
+  labs(x = NULL, y = NULL, size = NULL) +
   theme_minimal(base_size = 16) +
   theme(
-    plot.title = element_text(face = "bold", size = 28, hjust = 0.5),
-    plot.subtitle = element_textbox_simple(
-      size = 11, color = "black", hjust = 0.5, halign = 0.5,
-      margin = margin(t = 4, b = 6), padding = margin(5, 8, 5, 8),
-      linetype = 1, box.color = "grey60", linewidth = 0.4, fill = NA
-    ),
     axis.text.x = element_text(color = "black", size = 10, face = "bold"),
     axis.text.y = element_text(color = "black", size = 12, margin = margin(r = 0)),
     legend.text = element_text(size = 12, margin = margin(l = 1)),
@@ -129,7 +137,18 @@ contest_chart <- ggplot(contest_data, aes(y = label)) +
     panel.grid.minor = element_blank(),
     panel.grid.major.y = element_blank()
   )
-contest_chart
+
+# Title and subtitle applied via plot_annotation() (see boxed_text() above)
+# rather than contest_chart's own labs()/theme(), so the subtitle box width
+# matches the caption's when this chart is reused (as contest_chart_top) in
+# the combined contest_and_overlay figure below
+contest_chart_standalone <- contest_chart +
+  plot_annotation(
+    title = title_text,
+    subtitle = subtitle_text,
+    theme = theme(plot.title = title_style, plot.subtitle = boxed_text(margin(t = 4, b = 6)))
+  )
+contest_chart_standalone
 
 # --- Katmai Conservancy revenue & total votes, matched to the same year
 # range as the contest chart -----------------------------------------
@@ -219,17 +238,19 @@ overlay_chart_bottom <- overlay_chart +
 contest_and_overlay <- contest_chart_top / overlay_chart_bottom +
   plot_layout(heights = c(3, 1.5), axis_titles = "collect") +
   plot_annotation(
+    title = title_text,
+    subtitle = subtitle_text,
     # TODO: replace with real caption text (e.g. data source, units, notes)
-    caption = "The total revenue for the Katmai Conservancy that supports the bears is highly correlated to the number of votes cast in the Fat Bear Week contest. (Data sourced from public 990 tax filings)",
-    theme = theme(plot.caption = element_textbox_simple(
-      size = 11, color = "black", hjust = 0.5, halign = 0.5,
-      margin = margin(t = 6, b = 2), padding = margin(5, 8, 5, 8),
-      linetype = 1, box.color = "grey60", linewidth = 0.4, fill = NA
-    ))
+    caption = caption_text,
+    theme = theme(
+      plot.title = title_style,
+      plot.subtitle = boxed_text(margin(t = 4, b = 6)),
+      plot.caption = boxed_text(margin(t = 6, b = 2))
+    )
   )
 contest_and_overlay
 
-ggsave("contest_chart.png", contest_chart, width = 8, height = 6, dpi = 150)
-ggsave("contest_chart.svg", contest_chart, width = 8, height = 6)
+ggsave("contest_chart.png", contest_chart_standalone, width = 8, height = 6, dpi = 150)
+ggsave("contest_chart.svg", contest_chart_standalone, width = 8, height = 6)
 ggsave("contest_and_revenue.png", contest_and_overlay, width = 8, height = 9, dpi = 150)
 ggsave("contest_and_revenue.svg", contest_and_overlay, width = 8, height = 9)
