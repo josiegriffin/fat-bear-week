@@ -86,9 +86,8 @@ abbreviate_years <- function(year) {
   )
 }
 
-title_text <- "Fat Bear Week"
-subtitle_text <- "These bears have made the most appearances in the Fat Bear bracket since it started in 2014. All bears have a numerical ID and some bears also have a name."
-caption_text <- "The total revenue for the Katmai Conservancy that supports the bears is highly correlated to the number of votes cast in the Fat Bear Week contest. (Data sourced from public 990 tax filings)"
+title_text <- "It's Fat Bear Week!"
+subtitle_text <- "Below are the historical top competitors for fattest bear in Katmai National Park Alaska, which has occurred annually since 2014. All bears have a numerical ID and some bears also have a name."
 title_style <- element_text(face = "bold", size = 28, hjust = 0.5)
 
 # Both the subtitle and caption are boxed with this same style. Applying it
@@ -159,6 +158,20 @@ contest_chart_standalone
 overlay_data <- summary_out |>
   filter(year %in% contest_years) |>
   select(year, total_revenue, total_votes)
+
+# Years missing either value (2014-2016 revenue, 2015-2016 votes) are
+# dropped pairwise rather than imputed
+revenue_votes_cor <- cor(
+  overlay_data$total_revenue, overlay_data$total_votes,
+  use = "pairwise.complete.obs"
+)
+
+caption_text <- str_glue(
+  "The total revenue for the Katmai Conservancy that supports the bears is ",
+  "highly correlated (r = {round(revenue_votes_cor, 2)}) to the number of ",
+  "votes cast in the Fat Bear Week contest. (Data sourced from public 990 ",
+  "tax filings)"
+)
 
 scale_factor <- max(overlay_data$total_revenue, na.rm = TRUE) /
   max(overlay_data$total_votes, na.rm = TRUE)
