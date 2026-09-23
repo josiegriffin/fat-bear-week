@@ -112,7 +112,7 @@ contest_chart <- ggplot(contest_data, aes(y = label)) +
   theme(
     plot.title = element_text(face = "bold", size = 28, hjust = 0.5),
     plot.subtitle = element_textbox_simple(
-      size = 11, color = "black", hjust = 0.5, halign = 0.5,
+      size = 11, face = "bold", color = "black", hjust = 0.5, halign = 0.5,
       margin = margin(t = 4, b = 6), padding = margin(5, 8, 5, 8),
       linetype = 1, box.color = "grey60", linewidth = 0.4, fill = NA
     ),
@@ -197,7 +197,16 @@ contest_chart_top <- contest_chart +
   theme(
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
-    plot.margin = margin(b = 2)
+    plot.margin = margin(b = 2),
+    # Fixed absolute width (rather than the default 1npc, which is relative
+    # to this plot's own panel) so this box renders at the same width as
+    # the caption's textbox below it in the stacked figure
+    plot.subtitle = element_textbox_simple(
+      size = 11, face = "bold", color = "black", hjust = 0.5, halign = 0.5,
+      width = unit(7.6, "in"),
+      margin = margin(t = 4, b = 6), padding = margin(5, 8, 5, 8),
+      linetype = 1, box.color = "grey60", linewidth = 0.4, fill = NA
+    )
   )
 
 # Move the shared year axis to the top of the overlay panel, so it sits
@@ -220,7 +229,8 @@ contest_and_overlay <- contest_chart_top / overlay_chart_bottom +
     # TODO: replace with real caption text (e.g. data source, units, notes)
     caption = "The total revenue for the Katmai Conservancy that supports the bears is highly correlated to the number of votes cast in the Fat Bear Week contest. (Data sourced from public 990 tax filings)",
     theme = theme(plot.caption = element_textbox_simple(
-      size = 11, color = "black", hjust = 0.5, halign = 0.5,
+      size = 11, face = "bold", color = "black", hjust = 0.5, halign = 0.5,
+      width = unit(7.6, "in"),
       margin = margin(t = 6, b = 2), padding = margin(5, 8, 5, 8),
       linetype = 1, box.color = "grey60", linewidth = 0.4, fill = NA
     ))
