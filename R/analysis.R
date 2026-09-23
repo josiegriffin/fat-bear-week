@@ -3,6 +3,7 @@
 library(tidyverse)
 library(ggstar)
 library(patchwork)
+library(ggtext)
 
 appearances <- read_csv("data/appearances.csv", show_col_types = FALSE)
 summary_df <- read_csv("data/summary.csv", show_col_types = FALSE)
@@ -104,13 +105,17 @@ contest_chart <- ggplot(contest_data, aes(y = label)) +
   scale_x_continuous(breaks = contest_years, labels = abbreviate_years, limits = range(contest_years)) +
   labs(
     title = "Fat Bear Week",
-    subtitle = str_wrap("These bears have made the most appearances in the Fat Bear bracket since it started in 2014. All bears have a numerical ID and some bears also have a name.", width = 100),
+    subtitle = "These bears have made the most appearances in the Fat Bear bracket since it started in 2014. All bears have a numerical ID and some bears also have a name.",
     x = NULL, y = NULL, size = NULL
   ) +
   theme_minimal(base_size = 16) +
   theme(
     plot.title = element_text(face = "bold", size = 28, hjust = 0.5),
-    plot.subtitle = element_text(size = 11, color = "black", margin = margin(b = 2), hjust = 0.5),
+    plot.subtitle = element_textbox_simple(
+      size = 11, color = "black", hjust = 0.5, halign = 0.5,
+      margin = margin(t = 4, b = 6), padding = margin(5, 8, 5, 8),
+      linetype = 1, box.color = "grey60", linewidth = 0.4, fill = NA
+    ),
     axis.text.x = element_text(color = "black", size = 10, face = "bold"),
     axis.text.y = element_text(color = "black", size = 12, margin = margin(r = 0)),
     legend.text = element_text(size = 12, margin = margin(l = 1)),
@@ -192,7 +197,6 @@ contest_chart_top <- contest_chart +
   theme(
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
-    axis.line.x = element_line(color = "grey50", linewidth = 0.3),
     plot.margin = margin(b = 2)
   )
 
@@ -207,7 +211,6 @@ overlay_chart_bottom <- overlay_chart +
   theme(
     axis.text.x.top = element_text(color = "black", size = 12, face = "bold"),
     axis.ticks.x.top = element_blank(),
-    axis.line.x.top = element_line(color = "grey50", linewidth = 0.3),
     plot.margin = margin(t = 2)
   )
 
@@ -215,8 +218,12 @@ contest_and_overlay <- contest_chart_top / overlay_chart_bottom +
   plot_layout(heights = c(3, 1.5), axis_titles = "collect") +
   plot_annotation(
     # TODO: replace with real caption text (e.g. data source, units, notes)
-    caption = str_wrap("The total revenue for the Katmai Conservancy that supports the bears is highly correlated to the number of votes cast in the Fat Bear Week contest. (Data sourced from public 990 tax filings)", width = 100),
-    theme = theme(plot.caption = element_text(size = 11, color = "black", margin = margin(t = 2), hjust = 0.5))
+    caption = "The total revenue for the Katmai Conservancy that supports the bears is highly correlated to the number of votes cast in the Fat Bear Week contest. (Data sourced from public 990 tax filings)",
+    theme = theme(plot.caption = element_textbox_simple(
+      size = 11, color = "black", hjust = 0.5, halign = 0.5,
+      margin = margin(t = 6, b = 2), padding = margin(5, 8, 5, 8),
+      linetype = 1, box.color = "grey60", linewidth = 0.4, fill = NA
+    ))
   )
 contest_and_overlay
 
